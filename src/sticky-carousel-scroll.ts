@@ -10,17 +10,22 @@ type ChildAnimationElements = {
 type ChildAnimationElementsMap = Map<number, ChildAnimationElements>;
 
 const initStickyCarouselScroll = () => {
-  const [gsap] = getGsap(undefined, "error");
+  const [gsap, ScrollTrigger] = getGsap(["ScrollTrigger"], "error");
 
-  if (!gsap) return;
+  if (!gsap || !ScrollTrigger) return;
 
-  const featuredListingCarouslNodes = getMultipleHtmlElements<EmblaNodeElement>({
+  const partnersScrollArea = getHtmlElement({ selector: "[partners-scroll-area]" });
+
+  if (!partnersScrollArea) return;
+
+  const carouselNode = getHtmlElement<EmblaNodeElement>({
     selector: "[data-carousel-parent][data-featured-listing]",
+    parent: partnersScrollArea,
   });
 
-  if (!featuredListingCarouslNodes) return;
+  if (!carouselNode) return;
 
-  for (const carouselNode of featuredListingCarouslNodes) {
+  const initCarouselAnimation = () => {
     let isInitialized = false;
     let carouselApi = carouselNode.emblaApi;
     let slideCards = getMultipleHtmlElements({
@@ -143,14 +148,23 @@ const initStickyCarouselScroll = () => {
       selectCurrentSlide(currentIndex);
     });
 
-    carouselNode.addEventListener("embla:reInit", (event) => {
-      carouselApi = event.detail.embla;
+    return carouselApi;
+  };
 
-      currentIndex = carouselApi.selectedScrollSnap();
+  const carouselApi = initCarouselAnimation();
 
-      selectCurrentSlide(currentIndex);
-    });
+  if (!carouselApi) {
+    console.error("Carousel API failed to initialize, scroll animation will not work");
+    return;
   }
+
+  ScrollTrigger.create({
+    trigger: partnersScrollArea,
+    start: "top top",
+    end: "bottom bottom",
+    scrub: true,
+    pin: carouselNode,
+  });
 };
 
 afterWebflowReady(() => {
