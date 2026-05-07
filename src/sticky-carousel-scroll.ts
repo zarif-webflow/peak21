@@ -158,12 +158,38 @@ const initStickyCarouselScroll = () => {
     return;
   }
 
+  const navbarHeightElement = getHtmlElement({ selector: "[data-navbar-height]" });
+
+  if (!navbarHeightElement) {
+    console.error("Navbar height element not found, scroll animation will not work");
+    return;
+  }
+
+  const totalSlidesLength = carouselApi.slideNodes().length;
+  let lastScrolledIndex = -1;
+
   ScrollTrigger.create({
     trigger: partnersScrollArea,
-    start: "top top",
-    end: "bottom bottom",
+    start: () => {
+      const navbarHeight = navbarHeightElement.getBoundingClientRect().height;
+      const offset = (window.innerHeight - navbarHeight - carouselNode.offsetHeight) / 2;
+      return `top ${navbarHeight + offset}px`;
+    },
+    end: () => {
+      const navbarHeight = navbarHeightElement.getBoundingClientRect().height;
+      const offset = (window.innerHeight - navbarHeight - carouselNode.offsetHeight) / 2;
+      return `bottom ${window.innerHeight - offset}px`;
+    },
     scrub: true,
     pin: carouselNode,
+    onUpdate: (self) => {
+      const targetIndex = Math.round(self.progress * (totalSlidesLength - 1));
+
+      if (targetIndex !== lastScrolledIndex) {
+        lastScrolledIndex = targetIndex;
+        carouselApi.scrollTo(targetIndex, false);
+      }
+    },
   });
 };
 
